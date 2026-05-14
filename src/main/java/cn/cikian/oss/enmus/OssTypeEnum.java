@@ -6,7 +6,10 @@ public enum OssTypeEnum {
 
     AWS("aws"),
 
-    MINIO("minio");
+    MINIO("minio"),
+
+    UPYUN("upyun"),
+    ;
 
     private String type;
 
