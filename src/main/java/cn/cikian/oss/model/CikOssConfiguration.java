@@ -5,9 +5,13 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @author sean
- * @version 0.2
- * @date 2021/12/9
+ * OSS 配置类
+ *
+ * @author Cikian
+ * @version 1.0
+ * @implNote
+ * @see <a href="https://www.cikian.cn">https://www.cikian.cn</a>
+ * @since 2026-05-15 01:36
  */
 @Data
 @ConfigurationProperties(prefix = "oss")
@@ -27,6 +31,11 @@ public class CikOssConfiguration {
      * 服务端点地址（需包含协议头，如 http://）
      */
     private String endpoint;
+
+    /**
+     * url前缀，用于拼接文件的实际访问地址，如果缺省，则只使用在bucket中的相对路径）
+     */
+    private String urlPrefix;
 
     /**
      * 访问密钥

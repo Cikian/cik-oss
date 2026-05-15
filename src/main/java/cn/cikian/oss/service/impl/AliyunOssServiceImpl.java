@@ -1,8 +1,8 @@
 package cn.cikian.oss.service.impl;
 
 import cn.cikian.oss.enmus.OssTypeEnum;
-import cn.cikian.oss.model.CredentialsToken;
 import cn.cikian.oss.model.CikOssConfiguration;
+import cn.cikian.oss.model.CredentialsToken;
 import cn.cikian.oss.service.IOssService;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
@@ -20,12 +20,19 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 /**
  * 阿里云 OSS 实现
- * 支持 Spring Boot 自动装配及原生 Java 手动实例化
+ *
+ * @author Cikian
+ * @version 1.0
+ * @implNote
+ * @see <a href="https://www.cikian.cn">https://www.cikian.cn</a>
+ * @since 2026-05-15 01:36
  */
 public class AliyunOssServiceImpl implements IOssService {
 
@@ -37,6 +44,7 @@ public class AliyunOssServiceImpl implements IOssService {
 
     /**
      * 构造函数：注入非静态配置对象
+     *
      * @param configuration 配置信息
      */
     public AliyunOssServiceImpl(CikOssConfiguration configuration) {
@@ -70,7 +78,7 @@ public class AliyunOssServiceImpl implements IOssService {
                     configuration.getExpire());
 
         } catch (ClientException e) {
-            log.error("获取阿里云 STS 凭证失败", e);
+            log.error("获取阿里云 STS 凭证失败: {}", e.getMessage());
         }
         return null;
     }
@@ -80,6 +88,7 @@ public class AliyunOssServiceImpl implements IOssService {
         ensureClientCreated();
         boolean isExist = ossClient.doesObjectExist(bucket, objectKey);
         if (!isExist) {
+            log.error("对象[{}]不存在", objectKey);
             throw new OSSException("对象不存在: " + objectKey);
         }
 
@@ -88,12 +97,19 @@ public class AliyunOssServiceImpl implements IOssService {
     }
 
     @Override
+    public List<String> getObjectList(String bucket, String objectKey) {
+        return Collections.emptyList();
+    }
+
+    @Override
     public Boolean deleteObject(String bucket, String objectKey) {
         ensureClientCreated();
         if (!ossClient.doesObjectExist(bucket, objectKey)) {
-            return true;
+            log.error("删除失败，对象[{}]不存在", objectKey);
+            return false;
         }
         ossClient.deleteObject(bucket, objectKey);
+        log.info("删除对象: {}", objectKey);
         return true;
     }
 

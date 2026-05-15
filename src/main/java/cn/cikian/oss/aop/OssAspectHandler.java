@@ -1,6 +1,7 @@
-package cn.cikian.oss.service.impl;
+package cn.cikian.oss.aop;
 
 import cn.cikian.oss.model.CikOssConfiguration;
+import cn.cikian.oss.service.OssServiceContext;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +11,11 @@ import org.springframework.stereotype.Component;
  * OSS 切面处理器
  * 用于在执行存储操作前自动初始化客户端并校验配置
  *
- * @author sean
- * @version 1.2
+ * @author Cikian
+ * @version 1.0
+ * @implNote
+ * @see <a href="https://www.cikian.cn">https://www.cikian.cn</a>
+ * @since 2026-05-15 01:36
  */
 @Component
 @Aspect

@@ -1,11 +1,13 @@
 package cn.cikian.oss.model;
 
 /**
+ * OSS 临时访问凭证
+ *
  * @author Cikian
  * @version 1.0
  * @implNote
  * @see <a href="https://www.cikian.cn">https://www.cikian.cn</a>
- * @since 2026-05-14 13:33
+ * @since 2026-05-15 01:36
  */
 public class CredentialsToken {
 

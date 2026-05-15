@@ -6,6 +6,7 @@ import cn.cikian.oss.model.CredentialsToken;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.List;
 
 /**
  * @author sean
@@ -29,6 +30,11 @@ public interface IOssService {
      * @return download link
      */
     URL getObjectUrl(String bucket, String objectKey);
+
+    /**
+     * 获取文件列表
+     */
+    List<String> getObjectList(String bucket, String path);
 
     /**
      * Deletes the object in the storage bucket.

@@ -1,10 +1,9 @@
-package cn.cikian.oss.service.impl;
+package cn.cikian.oss.service;
 
 import cn.cikian.oss.annotations.OssCheck;
 import cn.cikian.oss.enmus.OssTypeEnum;
 import cn.cikian.oss.model.CredentialsToken;
 import cn.cikian.oss.model.CikOssConfiguration;
-import cn.cikian.oss.service.IOssService;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -74,9 +73,33 @@ public class OssServiceContext {
     }
 
     @OssCheck
+    public URL getObjectUrl(String objectKey) {
+        return getObjectUrl(configuration.getBucket(), objectKey);
+    }
+
+    @OssCheck
+    public List<String> getObjectList(String bucket, String path) {
+        if (!hasText(bucket) || !hasText(path)) {
+            throw new IllegalArgumentException("Bucket name or object key must not be empty.");
+        }
+        checkServiceReady();
+        return this.ossService.getObjectList(bucket, path);
+    }
+
+    @OssCheck
+    public List<String> getObjectList(String path) {
+        return getObjectList(configuration.getBucket(), path);
+    }
+
+    @OssCheck
     public Boolean deleteObject(String bucket, String objectKey) {
         checkServiceReady();
         return this.ossService.deleteObject(bucket, objectKey);
+    }
+
+    @OssCheck
+    public Boolean deleteObject(String objectKey) {
+        return deleteObject(configuration.getBucket(), objectKey);
     }
 
     @OssCheck
@@ -86,9 +109,19 @@ public class OssServiceContext {
     }
 
     @OssCheck
+    public InputStream getObject(String objectKey) {
+        return getObject(configuration.getBucket(), objectKey);
+    }
+
+    @OssCheck
     public void putObject(String bucket, String objectKey, InputStream stream) {
         checkServiceReady();
         this.ossService.putObject(bucket, objectKey, stream);
+    }
+
+    @OssCheck
+    public void putObject(String objectKey, InputStream stream) {
+        putObject(configuration.getBucket(), objectKey, stream);
     }
 
     /**

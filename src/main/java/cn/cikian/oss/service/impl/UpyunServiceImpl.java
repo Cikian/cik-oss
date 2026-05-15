@@ -1,6 +1,7 @@
 package cn.cikian.oss.service.impl;
 
 import cn.cikian.oss.enmus.OssTypeEnum;
+import cn.cikian.oss.exception.CikException;
 import cn.cikian.oss.model.CikOssConfiguration;
 import cn.cikian.oss.model.CredentialsToken;
 import cn.cikian.oss.service.IOssService;
@@ -16,12 +17,10 @@ import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * 又拍云 存储实现
@@ -37,10 +36,12 @@ public class UpyunServiceImpl implements IOssService {
 
     /**
      * 构造函数注入配置
+     *
      * @param configuration 非静态配置对象
      */
     public UpyunServiceImpl(CikOssConfiguration configuration) {
         this.configuration = configuration;
+        this.createClient();
     }
 
     @Override
@@ -75,64 +76,100 @@ public class UpyunServiceImpl implements IOssService {
 
     @Override
     public URL getObjectUrl(String bucket, String objectKey) {
-//        ensureClientCreated();
-//        try {
-//            return new URL(
-//                    client.getPresignedObjectUrl(
-//                            GetPresignedObjectUrlArgs.builder()
-//                                    .method(Method.GET)
-//                                    .bucket(bucket)
-//                                    .object(objectKey)
-//                                    .expiry(Math.toIntExact(configuration.getExpire()))
-//                                    .build()));
-//        } catch (Exception e) {
-//            log.error("获取文件预签名地址失败: {}", objectKey, e);
-//            throw new RuntimeException("文件不存在或获取地址失败");
-//        }
-        return null;
+        ensureClientCreated();
+        try {
+            Response resp = client.getFileInfo(objectKey);
+            if (resp.isSuccessful()) {
+                return new URL(configuration.getUrlPrefix() == null ?
+                        objectKey : configuration.getUrlPrefix() + objectKey);
+            } else {
+                throw new UpException(resp.message());
+            }
+        } catch (UpException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<String> getObjectList(String bucket, String path) {
+        ensureClientCreated();
+
+        // 预处理路径
+        final String normalizedPath = path.endsWith("/") ? path : path + "/";
+        List<String> res = new ArrayList<>();
+
+        try (Response response = client.readDirIter(path, null)) {
+            if (response.body() == null) {
+                return res;
+            }
+
+            // 对于文件列表非常长的情况（上万个文件）可以显著减少内存抖动
+            try (BufferedReader reader = new BufferedReader(response.body().charStream())) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) continue;
+
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 0) {
+                        String fileName = parts[0];
+                        String fullPath = normalizedPath + fileName;
+
+                        if (fullPath.startsWith("/")) {
+                            fullPath = fullPath.substring(1);
+                        }
+                        res.add(fullPath);
+                    }
+                }
+            }
+        } catch (IOException | UpException e) {
+            throw new RuntimeException("Failed to fetch object list from path: " + path, e);
+        }
+
+        return res;
     }
 
     @Override
     public Boolean deleteObject(String bucket, String objectKey) {
-//        ensureClientCreated();
-//        try {
-//            client.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(objectKey).build());
-//            return true;
-//        } catch (Exception e) {
-//            log.error("删除文件失败: {}", objectKey, e);
-//            return false;
-//        }
-        return false;
+        ensureClientCreated();
+        try {
+            Response fileInfo = client.getFileInfo(objectKey);
+            if (fileInfo.code() == 200) {
+                return client.deleteFile(objectKey, null).isSuccessful();
+            } else {
+                throw new CikException("文件不存在！");
+            }
+        } catch (UpException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
-//
+
     @Override
     public InputStream getObject(String bucket, String objectKey) {
-//        ensureClientCreated();
-//        try (Response response = client.readFile(objectKey)) {
-//            ResponseBody body = response.body();
-//            InputStream inputStream = body.byteStream();
-//            // Java 8 兼容写法：将 InputStream 转为 ByteArrayInputStream
-//            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-//            byte[] data = new byte[8192];
-//            int nRead;
-//            while ((nRead = object.read(data, 0, data.length)) != -1) {
-//                buffer.write(data, 0, nRead);
-//            }
-//            return new ByteArrayInputStream(buffer.toByteArray());
-//
-//        } catch (Exception e) {
-//            log.error("获取文件流失败: {}", objectKey, e);
-//        }
-//        // Java 8 兼容写法：返回空流
-//        return new ByteArrayInputStream(new byte[0]);
-        return null;
+        ensureClientCreated();
+        try (Response response = client.readFile(objectKey)) {
+            if (response.isSuccessful() && response.body() != null) {
+                ResponseBody body = response.body();
+                InputStream inputStream = body.byteStream();
+                // Java 8 兼容写法：将 InputStream 转为 ByteArrayInputStream
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                byte[] data = new byte[8192];
+                int nRead;
+                while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+                    buffer.write(data, 0, nRead);
+                }
+                return new ByteArrayInputStream(buffer.toByteArray());
+            }
+        } catch (Exception e) {
+            log.error("获取文件流失败: {}", objectKey, e);
+        }
+        return new ByteArrayInputStream(new byte[0]);
     }
 
     @Override
     public void putObject(String bucket, String objectKey, InputStream input) {
         ensureClientCreated();
         try {
-            // 检查是否存在
             Response fileInfo = client.getFileInfo(objectKey);
             if (fileInfo.code() == 200) {
                 throw new RuntimeException("文件已存在: " + objectKey);

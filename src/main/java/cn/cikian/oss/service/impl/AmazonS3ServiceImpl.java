@@ -74,6 +74,11 @@ public class AmazonS3ServiceImpl implements IOssService {
     }
 
     @Override
+    public List<String> getObjectList(String bucket, String objectKey) {
+        return Collections.emptyList();
+    }
+
+    @Override
     public Boolean deleteObject(String bucket, String objectKey) {
         ensureClientCreated();
         if (!client.doesObjectExist(bucket, objectKey)) {

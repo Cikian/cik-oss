@@ -9,14 +9,20 @@ import io.minio.credentials.AssumeRoleProvider;
 import io.minio.credentials.Credentials;
 import io.minio.errors.*;
 import io.minio.http.Method;
+import io.minio.messages.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -58,6 +64,7 @@ public class MinIOServiceImpl implements IOssService {
                     null, null, null, null);
 
             Credentials credential = provider.fetch();
+            log.info("获取 MinIO STS 凭据");
             return new CredentialsToken(
                     credential.accessKey(),
                     credential.secretKey(),
@@ -85,6 +92,39 @@ public class MinIOServiceImpl implements IOssService {
             log.error("获取文件预签名地址失败: {}", objectKey, e);
             throw new RuntimeException("文件不存在或获取地址失败");
         }
+    }
+
+    @Override
+    public List<String> getObjectList(String bucket, String objectKey) {
+        ensureClientCreated();
+        Iterable<Result<Item>> list = client.listObjects(ListObjectsArgs.builder()
+                .bucket(bucket)
+                .prefix(objectKey).build());
+        List<String> res =  new ArrayList<>();
+        for (Result<Item> result : list) {
+            try {
+                Item item = result.get();
+                if (item != null) {
+                    res.add(item.objectName());
+                }
+            } catch (ErrorResponseException
+                     | InsufficientDataException
+                     | InternalException
+                     | InvalidKeyException
+                     | InvalidResponseException
+                     | IOException
+                     | NoSuchAlgorithmException
+                     | ServerException
+                     | XmlParserException e) {
+                log.error("获取{}文件列表失败", objectKey, e);
+                throw new RuntimeException(e);
+            }
+        }
+        log.info("1获取{}文件列表成功", objectKey);
+        log.warn("2获取{}文件列表成功", objectKey);
+        log.error("3获取{}文件列表成功", objectKey);
+        log.info("4获取{}文件列表成功", objectKey);
+        return res;
     }
 
     @Override
