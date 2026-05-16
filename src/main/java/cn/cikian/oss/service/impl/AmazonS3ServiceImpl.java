@@ -39,7 +39,9 @@ public class AmazonS3ServiceImpl implements IOssService {
      * 构造函数注入配置对象
      */
     public AmazonS3ServiceImpl(CikOssConfiguration configuration) {
+        log.info("AmazonS3 构造器注入配置");
         this.configuration = configuration;
+        ensureClientCreated();
     }
 
     @Override
@@ -49,21 +51,26 @@ public class AmazonS3ServiceImpl implements IOssService {
 
     @Override
     public CredentialsToken getCredentials() {
-        AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(
-                        new BasicAWSCredentials(configuration.getAccessKey(), configuration.getSecretKey())))
-                .withRegion(configuration.getRegion()).build();
+        try {
+            AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
+                    .withCredentials(new AWSStaticCredentialsProvider(
+                            new BasicAWSCredentials(configuration.getAccessKey(), configuration.getSecretKey())))
+                    .withRegion(configuration.getRegion()).build();
 
-        AssumeRoleRequest request = new AssumeRoleRequest()
-                .withRoleArn(configuration.getRoleArn())
-                .withRoleSessionName(configuration.getRoleSessionName())
-                .withDurationSeconds(Math.toIntExact(configuration.getExpire()));
+            AssumeRoleRequest request = new AssumeRoleRequest()
+                    .withRoleArn(configuration.getRoleArn())
+                    .withRoleSessionName(configuration.getRoleSessionName())
+                    .withDurationSeconds(Math.toIntExact(configuration.getExpire()));
 
-        AssumeRoleResult result = stsClient.assumeRole(request);
-        Credentials credentials = result.getCredentials();
+            AssumeRoleResult result = stsClient.assumeRole(request);
+            Credentials credentials = result.getCredentials();
 
-        return new CredentialsToken(credentials.getAccessKeyId(), credentials.getSecretAccessKey(),
-                credentials.getSessionToken(), (credentials.getExpiration().getTime() - System.currentTimeMillis()) / 1000);
+            return new CredentialsToken(credentials.getAccessKeyId(), credentials.getSecretAccessKey(),
+                    credentials.getSessionToken(), (credentials.getExpiration().getTime() - System.currentTimeMillis()) / 1000);
+        } catch (Exception e) {
+            log.error("获取Amazon STS 凭证失败: {}", e.getMessage());
+        }
+        return null;
     }
 
     @Override
@@ -82,9 +89,11 @@ public class AmazonS3ServiceImpl implements IOssService {
     public Boolean deleteObject(String bucket, String objectKey) {
         ensureClientCreated();
         if (!client.doesObjectExist(bucket, objectKey)) {
-            return true;
+            log.error("删除失败，对象[{}]不存在", objectKey);
+            return false;
         }
         client.deleteObject(bucket, objectKey);
+        log.info("删除对象[{}]成功", objectKey);
         return true;
     }
 
@@ -98,10 +107,11 @@ public class AmazonS3ServiceImpl implements IOssService {
     public void putObject(String bucket, String objectKey, InputStream input) {
         ensureClientCreated();
         if (client.doesObjectExist(bucket, objectKey)) {
-            throw new RuntimeException("文件名已存在: " + objectKey);
+            log.error("文件已存在！");
+            throw new RuntimeException("文件已存在: " + objectKey);
         }
         PutObjectResult objectResult = client.putObject(new PutObjectRequest(bucket, objectKey, input, new ObjectMetadata()));
-        log.info("文件上传成功 (S3): {}", objectKey);
+        log.info("上传成功: {}", objectKey);
     }
 
     @Override

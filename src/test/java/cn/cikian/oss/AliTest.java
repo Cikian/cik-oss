@@ -4,8 +4,9 @@ package cn.cikian.oss;
 import cn.cikian.oss.enmus.OssTypeEnum;
 import cn.cikian.oss.model.CikOssConfiguration;
 import cn.cikian.oss.service.IOssService;
-import cn.cikian.oss.service.impl.MinIOServiceImpl;
 import cn.cikian.oss.service.OssServiceContext;
+import cn.cikian.oss.service.impl.AliyunOssServiceImpl;
+import cn.cikian.oss.service.impl.MinIOServiceImpl;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.junit.Test;
 
@@ -29,7 +30,7 @@ import static org.junit.Assert.assertNotNull;
  * @since 2026-05-14 22:53
  */
 
-public class MinioTest {
+public class AliTest {
 
     private CikOssConfiguration getConfig() {
         Dotenv dotenv = Dotenv.configure()
@@ -38,20 +39,22 @@ public class MinioTest {
 
         CikOssConfiguration config = new CikOssConfiguration();
         config.setEnable(true);
-        config.setProvider(OssTypeEnum.MINIO);
-        config.setEndpoint(dotenv.get("MINIO_ENDPOINT"));
-        config.setUrlPrefix("http://140.143.140.103:9001");
-        config.setBucket(dotenv.get("MINIO_BUCKET"));
-        config.setAccessKey(dotenv.get("MINIO_ACCESS_KEY"));
-        config.setSecretKey(dotenv.get("MINIO_SECRET_KEY"));
-        config.setObjectDirPrefix("photos");
+        config.setProvider(OssTypeEnum.ALIYUN);
+        config.setEndpoint(dotenv.get("ALI_ENDPOINT"));
+        config.setBucket(dotenv.get("ALI_BUCKET"));
+        config.setAccessKey(dotenv.get("ALI_ACCESS_KEY"));
+        config.setSecretKey(dotenv.get("ALI_SECRET_KEY"));
+        config.setObjectDirPrefix("test/");
+        config.setRegion(dotenv.get("ALI_REGION"));
+        config.setRoleArn(dotenv.get("ALI_ROLE_ARN"));
+        config.setRoleSessionName(dotenv.get("ALI_ROLE_SESSION_NAME"));
         config.setExpire(3600L);
         return config;
     }
 
     private OssServiceContext getContext() {
         CikOssConfiguration config = getConfig();
-        IOssService minio = new MinIOServiceImpl(config);
+        IOssService minio = new AliyunOssServiceImpl(config);
         return new OssServiceContext(Collections.singletonList(minio), config);
     }
 
@@ -59,9 +62,9 @@ public class MinioTest {
     public void testUpload(){
         OssServiceContext context = getContext();
         assertNotNull(context.getOssService());
-        String localPath = "C:\\Users\\Stargis\\temp-kmz\\ckmz_1778836058958.kmz";
+        String localPath = "D:\\Users\\Stargis\\Pictures\\b\\BW-N033-removebg.png";
         try (InputStream inputStream = Files.newInputStream(Paths.get(localPath))) {
-            context.putObject("test/ckmz_1778836058958.kmz", inputStream);
+            context.putObject("test/BW-N033-removebg.png", inputStream);
         } catch (Exception e) {
             throw new RuntimeException("KMZ 文件上传 OSS 失败: " + e.getMessage(), e);
         }
@@ -102,18 +105,6 @@ public class MinioTest {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    @Test
-    public void testDelete(){
-        OssServiceContext context = getContext();
-        assertNotNull(context.getOssService());
-        Boolean b = context.deleteObject("test/ckmz_1778836058958.kmz");
-        if (b) {
-            System.out.println("删除成功");
-        } else {
-            System.out.println("错误");
         }
     }
 

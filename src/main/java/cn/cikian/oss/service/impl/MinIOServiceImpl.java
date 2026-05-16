@@ -42,7 +42,9 @@ public class MinIOServiceImpl implements IOssService {
      * @param configuration 非静态配置对象
      */
     public MinIOServiceImpl(CikOssConfiguration configuration) {
+        log.info("Minio 构造器注入配置");
         this.configuration = configuration;
+        ensureClientCreated();
     }
 
     @Override
@@ -120,10 +122,7 @@ public class MinIOServiceImpl implements IOssService {
                 throw new RuntimeException(e);
             }
         }
-        log.info("1获取{}文件列表成功", objectKey);
-        log.warn("2获取{}文件列表成功", objectKey);
-        log.error("3获取{}文件列表成功", objectKey);
-        log.info("4获取{}文件列表成功", objectKey);
+        log.info("获取{}对象列表成功", objectKey);
         return res;
     }
 
@@ -132,9 +131,10 @@ public class MinIOServiceImpl implements IOssService {
         ensureClientCreated();
         try {
             client.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(objectKey).build());
+            log.info("删除对象[{}]成功", objectKey);
             return true;
         } catch (Exception e) {
-            log.error("删除文件失败: {}", objectKey, e);
+            log.error("删除对象[{}]失败: {}", objectKey, e.getMessage());
             return false;
         }
     }
@@ -164,12 +164,9 @@ public class MinIOServiceImpl implements IOssService {
     public void putObject(String bucket, String objectKey, InputStream input) {
         ensureClientCreated();
         try {
-            // 检查是否存在
             client.statObject(StatObjectArgs.builder().bucket(bucket).object(objectKey).build());
-            throw new RuntimeException("文件名已存在: " + objectKey);
+            throw new RuntimeException("文件已存在: " + objectKey);
         } catch (ErrorResponseException e) {
-            // 只有 404 错误才进行上传
-            log.info("文件不存在，准备上传: {}", objectKey);
             try {
                 ObjectWriteResponse response = client.putObject(
                         PutObjectArgs.builder()
@@ -177,7 +174,7 @@ public class MinIOServiceImpl implements IOssService {
                                 .object(objectKey)
                                 .stream(input, -1, 10485760L) // -1 代表未知大小分片上传
                                 .build());
-                log.info("上传成功，ETag: {}", response.etag());
+                log.info("上传成功: {}", objectKey);
             } catch (Exception ex) {
                 log.error("文件上传异常: {}", objectKey, ex);
                 throw new RuntimeException("上传失败");
@@ -198,6 +195,7 @@ public class MinIOServiceImpl implements IOssService {
                 .credentials(configuration.getAccessKey(), configuration.getSecretKey())
                 .region(configuration.getRegion())
                 .build();
+        log.info("Minio 创建Client");
     }
 
     /**
@@ -205,6 +203,7 @@ public class MinIOServiceImpl implements IOssService {
      */
     private void ensureClientCreated() {
         if (this.client == null) {
+            log.warn("Minio client为空，尝试创建Client");
             createClient();
         }
     }

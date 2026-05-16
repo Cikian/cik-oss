@@ -7,6 +7,8 @@ import cn.cikian.oss.service.IOssService;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
+import com.aliyun.oss.model.ListObjectsV2Result;
+import com.aliyun.oss.model.OSSObjectSummary;
 import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyun.oss.model.PutObjectRequest;
 import com.aliyuncs.DefaultAcsClient;
@@ -20,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -48,7 +50,9 @@ public class AliyunOssServiceImpl implements IOssService {
      * @param configuration 配置信息
      */
     public AliyunOssServiceImpl(CikOssConfiguration configuration) {
+        log.info("ALI 构造器注入配置");
         this.configuration = configuration;
+        ensureClientCreated();
     }
 
     @Override
@@ -98,7 +102,18 @@ public class AliyunOssServiceImpl implements IOssService {
 
     @Override
     public List<String> getObjectList(String bucket, String objectKey) {
-        return Collections.emptyList();
+        List<String> res = new ArrayList<>();
+        try {
+            ListObjectsV2Result result = ossClient.listObjectsV2(bucket, objectKey);
+            List<OSSObjectSummary> ossObjectSummaries = result.getObjectSummaries();
+            for (OSSObjectSummary s : ossObjectSummaries) {
+                res.add(s.getKey());
+            }
+        } catch (OSSException oe) {
+            log.error("获取对象列表[{}]异常：{}", objectKey, oe.getMessage());
+        }
+        log.info("获取对象列表[{}]成功", objectKey);
+        return res;
     }
 
     @Override
@@ -109,7 +124,7 @@ public class AliyunOssServiceImpl implements IOssService {
             return false;
         }
         ossClient.deleteObject(bucket, objectKey);
-        log.info("删除对象: {}", objectKey);
+        log.info("删除对象[{}]成功", objectKey);
         return true;
     }
 
@@ -123,10 +138,11 @@ public class AliyunOssServiceImpl implements IOssService {
     public void putObject(String bucket, String objectKey, InputStream input) {
         ensureClientCreated();
         if (ossClient.doesObjectExist(bucket, objectKey)) {
-            throw new RuntimeException("文件名已存在: " + objectKey);
+            log.error("文件已存在！");
+            throw new RuntimeException("文件已存在: " + objectKey);
         }
         ossClient.putObject(new PutObjectRequest(bucket, objectKey, input, new ObjectMetadata()));
-        log.info("文件上传成功: {}", objectKey);
+        log.info("上传成功: {}", objectKey);
     }
 
     @Override
@@ -138,6 +154,7 @@ public class AliyunOssServiceImpl implements IOssService {
                 .build(configuration.getEndpoint(),
                         configuration.getAccessKey(),
                         configuration.getSecretKey());
+        log.info("ALI 创建Client");
     }
 
     /**
@@ -145,6 +162,7 @@ public class AliyunOssServiceImpl implements IOssService {
      */
     private void ensureClientCreated() {
         if (this.ossClient == null) {
+            log.warn("ALI client为空，尝试创建Client");
             createClient();
         }
     }

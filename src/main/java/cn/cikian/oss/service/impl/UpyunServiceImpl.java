@@ -7,11 +7,8 @@ import cn.cikian.oss.model.CredentialsToken;
 import cn.cikian.oss.service.IOssService;
 import com.upyun.RestManager;
 import com.upyun.UpException;
-import io.minio.*;
 import io.minio.credentials.AssumeRoleProvider;
 import io.minio.credentials.Credentials;
-import io.minio.errors.ErrorResponseException;
-import io.minio.http.Method;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.slf4j.Logger;
@@ -20,7 +17,9 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * 又拍云 存储实现
@@ -40,8 +39,9 @@ public class UpyunServiceImpl implements IOssService {
      * @param configuration 非静态配置对象
      */
     public UpyunServiceImpl(CikOssConfiguration configuration) {
+        log.info("Upyun 构造器注入配置");
         this.configuration = configuration;
-        this.createClient();
+        this.ensureClientCreated();
     }
 
     @Override
@@ -83,9 +83,11 @@ public class UpyunServiceImpl implements IOssService {
                 return new URL(configuration.getUrlPrefix() == null ?
                         objectKey : configuration.getUrlPrefix() + objectKey);
             } else {
+                log.error("对象[{}]不存在", objectKey);
                 throw new UpException(resp.message());
             }
         } catch (UpException | IOException e) {
+            log.error("获取对象[{}]URL失败：{}", objectKey, e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -100,10 +102,11 @@ public class UpyunServiceImpl implements IOssService {
 
         try (Response response = client.readDirIter(path, null)) {
             if (response.body() == null) {
+                log.warn("对象列表[{}]为空", path);
                 return res;
             }
 
-            // 对于文件列表非常长的情况（上万个文件）可以显著减少内存抖动
+            // 对于文件列表非常长的情况可以显著减少内存抖动
             try (BufferedReader reader = new BufferedReader(response.body().charStream())) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -123,9 +126,10 @@ public class UpyunServiceImpl implements IOssService {
                 }
             }
         } catch (IOException | UpException e) {
-            throw new RuntimeException("Failed to fetch object list from path: " + path, e);
+            log.error("获取对象列表[{}]异常：{}", path, e.getMessage());
+            throw new RuntimeException("获取对象列表异常", e);
         }
-
+        log.info("获取对象列表[{}]成功", path);
         return res;
     }
 
@@ -135,11 +139,20 @@ public class UpyunServiceImpl implements IOssService {
         try {
             Response fileInfo = client.getFileInfo(objectKey);
             if (fileInfo.code() == 200) {
-                return client.deleteFile(objectKey, null).isSuccessful();
+                boolean successful = client.deleteFile(objectKey, null).isSuccessful();
+                if (successful) {
+                    log.info("删除对象[{}]成功", objectKey);
+                    return true;
+                } else {
+                    log.error("删除对象[{}]失败", objectKey);
+                    return false;
+                }
             } else {
-                throw new CikException("文件不存在！");
+                log.error("删除失败，对象[{}]不存在", objectKey);
+                throw new CikException("对象不存在！");
             }
         } catch (UpException | IOException e) {
+            log.error("删除对象[{}]失败: {}", objectKey, e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -174,20 +187,19 @@ public class UpyunServiceImpl implements IOssService {
             if (fileInfo.code() == 200) {
                 throw new RuntimeException("文件已存在: " + objectKey);
             }
-            log.info("文件不存在，准备上传: {}", objectKey);
             try {
                 Response response = client.writeFile(objectKey, input, null);
                 if (response.isSuccessful()) {
-                    log.info("上传成功");
+                    log.info("上传成功: {}", objectKey);
                 } else {
                     log.error("文件上传失败");
                     throw new RuntimeException("上传失败");
                 }
             } catch (Exception ex) {
-
+                log.error("文件上传失败: {}", ex.getMessage());
             }
         } catch (Exception e) {
-            log.error("检查文件状态异常: {}", objectKey, e);
+            log.error("上传文件状态异常: {}", objectKey, e);
             throw new RuntimeException("服务异常");
         }
     }
@@ -203,6 +215,7 @@ public class UpyunServiceImpl implements IOssService {
                 configuration.getSecretKey()
         );
         this.client.setApiDomain(RestManager.ED_AUTO);
+        log.info("Upyun 创建Client");
     }
 
     /**
@@ -210,6 +223,7 @@ public class UpyunServiceImpl implements IOssService {
      */
     private void ensureClientCreated() {
         if (this.client == null) {
+            log.warn("Upyun client为空，尝试创建Client");
             createClient();
         }
     }
