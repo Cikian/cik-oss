@@ -69,7 +69,7 @@ public class OssAutoConfiguration {
      * 注册 Upyun 服务实现
      */
     @Bean
-    @ConditionalOnProperty(prefix = "oss", name = "provider", havingValue = "minio")
+    @ConditionalOnProperty(prefix = "oss", name = "provider", havingValue = "upyun")
     public IOssService UpyunService(CikOssConfiguration config) {
         log.info("注册又拍云服务: Bucket: {}", config.getBucket());
         return new UpyunServiceImpl(config);

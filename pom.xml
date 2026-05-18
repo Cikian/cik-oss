@@ -11,9 +11,9 @@
 
     <groupId>cn.cikian</groupId>
     <artifactId>cik-oss</artifactId>
-    <version>0.0.4</version>
+    <version>0.0.6</version>
     <name>cik-oss</name>
-    <description>OSS工具，支持列表：阿里云, AWS MinIO</description>
+    <description>OSS工具，支持厂商：阿里云, AWS MinIO, 又拍云</description>
 
     <properties>
         <spring-boot.version>2.6.6</spring-boot.version>
