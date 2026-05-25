@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter;
  * @see <a href="https://www.cikian.cn">https://www.cikian.cn</a>
  * @since 2026-05-15 01:36
  */
-public class CustomHtmlLayout extends LayoutBase<ILoggingEvent> {
+public class LogbackCustomHtmlLayout extends LayoutBase<ILoggingEvent> {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     @Override

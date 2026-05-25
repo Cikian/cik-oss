@@ -31,7 +31,7 @@
         </rollingPolicy>
 
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="cn.cikian.oss.config.CustomHtmlLayout" />
+            <layout class="cn.cikian.oss.config.LogbackCustomHtmlLayout" />
         </encoder>
     </appender>
 

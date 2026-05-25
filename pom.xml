@@ -11,9 +11,22 @@
 
     <groupId>cn.cikian</groupId>
     <artifactId>cik-oss</artifactId>
-    <version>0.0.6</version>
+    <version>0.0.7</version>
     <name>cik-oss</name>
     <description>OSS工具，支持厂商：阿里云, AWS MinIO, 又拍云</description>
+
+    <developers>
+        <developer>
+            <id>cikian</id>
+            <name>Cikian Chen</name>
+            <email>cikian@cikian.com</email>
+            <url>https://www.cikian.cn</url>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>+8</timezone>
+        </developer>
+    </developers>
 
     <properties>
         <spring-boot.version>2.6.6</spring-boot.version>
