@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -180,27 +181,104 @@ public class UpyunServiceImpl implements IOssService {
     }
 
     @Override
-    public void putObject(String bucket, String objectKey, InputStream input) {
+    public URL putObject(String bucket, String objectKey, InputStream input) {
         ensureClientCreated();
+
         try {
+            // 1. 校验文件是否存在
             Response fileInfo = client.getFileInfo(objectKey);
-            if (fileInfo.code() == 200) {
-                throw new RuntimeException("文件已存在: " + objectKey);
+            if (fileInfo != null && fileInfo.code() == 200) {
+                throw new CikException("文件已存在: " + objectKey);
             }
-            try {
-                Response response = client.writeFile(objectKey, input, null);
-                if (response.isSuccessful()) {
-                    log.info("上传成功: {}", objectKey);
-                } else {
-                    log.error("文件上传失败");
-                    throw new RuntimeException("上传失败");
-                }
-            } catch (Exception ex) {
-                log.error("文件上传失败: {}", ex.getMessage());
+
+            // 2. 执行文件上传
+            Response response = client.writeFile(objectKey, input, null);
+            if (response == null || !response.isSuccessful()) {
+                log.error("文件上传失败，厂商返回状态异常");
+                throw new CikException("上传失败");
             }
+            log.info("上传成功: {}", objectKey);
+
+            // 3. 完美的 URL 生成：直接甩锅给配置类的 buildObjectUrl 方法
+            // 这样可以彻底避免双斜杠、少斜杠、漏写 bucket 以及特殊字符导致的任何非预期异常
+            return configuration.buildObjectUrl(bucket, objectKey);
+
+        } catch (RuntimeException e) {
+            // 捕获我们主动抛出的业务异常（文件已存在、上传失败），记录日志并继续向上抛出
+            log.error("业务处理异常: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
-            log.error("上传文件状态异常: {}", objectKey, e);
-            throw new RuntimeException("服务异常");
+            // 捕获 client.getFileInfo 或 client.writeFile 触发的其它未知网络/IO系统异常
+            log.error("上传文件系统状态异常: {}", objectKey, e);
+            throw new CikException("服务异常", e);
+        }
+    }
+
+    @Override
+    public URL putObject(String bucket, String objectKey, byte[] bytes) {
+        ensureClientCreated();
+
+        try {
+            // 1. 校验文件是否存在
+            Response fileInfo = client.getFileInfo(objectKey);
+            if (fileInfo != null && fileInfo.code() == 200) {
+                throw new CikException("文件已存在: " + objectKey);
+            }
+
+            // 2. 执行文件上传
+            Response response = client.writeFile(objectKey, bytes, null);
+            if (response == null || !response.isSuccessful()) {
+                log.error("文件上传失败，厂商返回状态异常");
+                throw new CikException("上传失败");
+            }
+            log.info("上传成功: {}", objectKey);
+
+            // 3. 完美的 URL 生成：直接甩锅给配置类的 buildObjectUrl 方法
+            // 这样可以彻底避免双斜杠、少斜杠、漏写 bucket 以及特殊字符导致的任何非预期异常
+            return configuration.buildObjectUrl(bucket, objectKey);
+
+        } catch (RuntimeException e) {
+            // 捕获我们主动抛出的业务异常（文件已存在、上传失败），记录日志并继续向上抛出
+            log.error("业务处理异常: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            // 捕获 client.getFileInfo 或 client.writeFile 触发的其它未知网络/IO系统异常
+            log.error("上传文件系统状态异常: {}", objectKey, e);
+            throw new CikException("服务异常", e);
+        }
+    }
+
+    @Override
+    public URL putObject(String bucket, String objectKey, File file) {
+        ensureClientCreated();
+
+        try {
+            // 1. 校验文件是否存在
+            Response fileInfo = client.getFileInfo(objectKey);
+            if (fileInfo != null && fileInfo.code() == 200) {
+                throw new CikException("文件已存在: " + objectKey);
+            }
+
+            // 2. 执行文件上传
+            Response response = client.writeFile(objectKey, file, null);
+            if (response == null || !response.isSuccessful()) {
+                log.error("文件上传失败，厂商返回状态异常");
+                throw new CikException("上传失败");
+            }
+            log.info("上传成功: {}", objectKey);
+
+            // 3. 完美的 URL 生成：直接甩锅给配置类的 buildObjectUrl 方法
+            // 这样可以彻底避免双斜杠、少斜杠、漏写 bucket 以及特殊字符导致的任何非预期异常
+            return configuration.buildObjectUrl(bucket, objectKey);
+
+        } catch (RuntimeException e) {
+            // 捕获我们主动抛出的业务异常（文件已存在、上传失败），记录日志并继续向上抛出
+            log.error("业务处理异常: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            // 捕获 client.getFileInfo 或 client.writeFile 触发的其它未知网络/IO系统异常
+            log.error("上传文件系统状态异常: {}", objectKey, e);
+            throw new CikException("服务异常", e);
         }
     }
 

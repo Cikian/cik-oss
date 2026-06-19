@@ -5,7 +5,7 @@
 
     <groupId>cn.cikian</groupId>
     <artifactId>cik-oss</artifactId>
-    <version>0.1.8</version>
+    <version>0.2.0</version>
     <name>cik-oss</name>
     <description>OSS工具，支持厂商：阿里云, AWS MinIO, 又拍云</description>
 
@@ -198,13 +198,13 @@
 
     <distributionManagement>
         <repository>
-            <id>cikian-private-repo</id>
+            <id>CikianMaven</id>
             <name>Cikian Release Repository</name>
             <url>https://mvnrep.cikian.cn/repository/public/</url>
         </repository>
 
         <snapshotRepository>
-            <id>cikian-private-repo</id>
+            <id>CikianMaven</id>
             <name>Cikian Snapshot Repository</name>
             <url>https://mvnrep.cikian.cn/repository/public/</url>
         </snapshotRepository>

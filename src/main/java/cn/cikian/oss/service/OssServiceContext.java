@@ -5,6 +5,7 @@ import cn.cikian.oss.enmus.OssTypeEnum;
 import cn.cikian.oss.model.CredentialsToken;
 import cn.cikian.oss.model.CikOssConfiguration;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Arrays;
@@ -114,14 +115,36 @@ public class OssServiceContext {
     }
 
     @OssCheck
-    public void putObject(String bucket, String objectKey, InputStream stream) {
+    public URL putObject(String bucket, String objectKey, InputStream stream) {
         checkServiceReady();
-        this.ossService.putObject(bucket, objectKey, stream);
+        return this.ossService.putObject(bucket, objectKey, stream);
     }
 
     @OssCheck
-    public void putObject(String objectKey, InputStream stream) {
-        putObject(configuration.getBucket(), objectKey, stream);
+    public URL putObject(String bucket, String objectKey, byte[] bytes) {
+        checkServiceReady();
+        return this.ossService.putObject(bucket, objectKey, bytes);
+    }
+
+    @OssCheck
+    public URL putObject(String bucket, String objectKey, File file) {
+        checkServiceReady();
+        return this.ossService.putObject(bucket, objectKey, file);
+    }
+
+    @OssCheck
+    public URL putObject(String objectKey, InputStream stream) {
+        return putObject(configuration.getBucket(), objectKey, stream);
+    }
+
+    @OssCheck
+    public URL putObject(String objectKey, byte[] bytes) {
+        return putObject(configuration.getBucket(), objectKey, bytes);
+    }
+
+    @OssCheck
+    public URL putObject(String objectKey, File file) {
+        return putObject(configuration.getBucket(), objectKey, file);
     }
 
     /**

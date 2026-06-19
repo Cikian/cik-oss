@@ -18,7 +18,9 @@ import com.amazonaws.services.securitytoken.model.Credentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
@@ -104,14 +106,41 @@ public class AmazonS3ServiceImpl implements IOssService {
     }
 
     @Override
-    public void putObject(String bucket, String objectKey, InputStream input) {
+    public URL putObject(String bucket, String objectKey, InputStream input) {
         ensureClientCreated();
+
+        // 1. 校验文件是否存在
         if (client.doesObjectExist(bucket, objectKey)) {
             log.error("文件已存在！");
             throw new RuntimeException("文件已存在: " + objectKey);
         }
-        PutObjectResult objectResult = client.putObject(new PutObjectRequest(bucket, objectKey, input, new ObjectMetadata()));
-        log.info("上传成功: {}", objectKey);
+
+        // 2. 执行文件上传，加入系统异常捕获
+        try {
+            PutObjectResult result = client.putObject(new PutObjectRequest(bucket, objectKey, input, new ObjectMetadata()));
+            log.info("上传成功: {}", objectKey);
+        } catch (Exception e) {
+            log.error("OSS上传遇到系统异常: {}", objectKey, e);
+            throw new RuntimeException("服务异常", e);
+        }
+
+        // 3. 完美的 URL 生成：直接甩锅给配置类的 buildObjectUrl 方法
+        // 解决双斜杠、少斜杠、漏写 bucket 的所有隐患，且安全防崩溃
+        return configuration.buildObjectUrl(bucket, objectKey);
+    }
+
+    @Override
+    public URL putObject(String bucket, String objectKey, byte[] bytes) {
+        ensureClientCreated();
+        log.error("AWS暂未实现接收byte[]，请使用InputStream");
+        return configuration.buildObjectUrl(bucket, null);
+    }
+
+    @Override
+    public URL putObject(String bucket, String objectKey, File file) {
+        ensureClientCreated();
+        log.error("AWS暂未实现接收File，请使用InputStream");
+        return configuration.buildObjectUrl(bucket, null);
     }
 
     @Override

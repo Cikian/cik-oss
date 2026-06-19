@@ -4,6 +4,7 @@ package cn.cikian.oss.service;
 import cn.cikian.oss.enmus.OssTypeEnum;
 import cn.cikian.oss.model.CredentialsToken;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
@@ -52,7 +53,11 @@ public interface IOssService {
      */
     InputStream getObject(String bucket, String objectKey);
 
-    void putObject(String bucket, String objectKey, InputStream input);
+    URL putObject(String bucket, String objectKey, InputStream input);
+
+    URL putObject(String bucket, String objectKey, byte[] bytes);
+
+    URL putObject(String bucket, String objectKey, File file);
 
     void createClient();
 }

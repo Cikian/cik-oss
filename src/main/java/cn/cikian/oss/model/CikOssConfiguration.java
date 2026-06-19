@@ -2,7 +2,11 @@ package cn.cikian.oss.model;
 
 import cn.cikian.oss.enmus.OssTypeEnum;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.net.URI;
+import java.net.URL;
 
 /**
  * OSS 配置类
@@ -13,6 +17,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @see <a href="https://www.cikian.cn">https://www.cikian.cn</a>
  * @since 2026-05-15 01:36
  */
+@Slf4j
 @Data
 @ConfigurationProperties(prefix = "oss")
 public class CikOssConfiguration {
@@ -85,6 +90,77 @@ public class CikOssConfiguration {
 
     public boolean isEnable() {
         return enable;
+    }
+
+    /**
+     * 安全地拼接并构建可访问的 URL 对象
+     *
+     * @param inputBucket 外部传入的 bucket，若为 null 或空则使用配置默认的 bucket
+     * @param objectKey   对象的 key，支持带或不带前缀斜杠
+     * @return 拼接好的 URL 对象，若参数不全或转换失败则返回 null
+     */
+    public URL buildObjectUrl(String inputBucket, String objectKey) {
+        // 1. 基础校验
+        if (this.endpoint == null || this.endpoint.trim().isEmpty()) {
+            log.warn("未配置endpoint，不返回URL");
+            return null;
+        }
+        if (objectKey == null || objectKey.trim().isEmpty()) {
+            log.error("未传入objectKey，不返回URL");
+            return null;
+        }
+
+        // 2. 决定最终使用的 Bucket 目标
+        String targetBucket = (inputBucket != null && !inputBucket.trim().isEmpty()) ? inputBucket.trim() : this.bucket;
+        if (targetBucket == null || targetBucket.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            String cleanEndpoint = this.endpoint.trim();
+            String cleanBucket = targetBucket.trim();
+            String cleanObjectKey = objectKey.trim();
+
+            // 3. 循环清洗 endpoint 尾部的斜杠
+            while (cleanEndpoint.endsWith("/")) {
+                cleanEndpoint = cleanEndpoint.substring(0, cleanEndpoint.length() - 1);
+            }
+
+            // 4. 循环清洗 bucket 首尾的斜杠
+            while (cleanBucket.startsWith("/")) {
+                cleanBucket = cleanBucket.substring(1);
+            }
+            while (cleanBucket.endsWith("/")) {
+                cleanBucket = cleanBucket.substring(0, cleanBucket.length() - 1);
+            }
+
+            // 5. 循环清洗 objectKey 首尾的斜杠
+            while (cleanObjectKey.startsWith("/")) {
+                cleanObjectKey = cleanObjectKey.substring(1);
+            }
+            while (cleanObjectKey.endsWith("/")) {
+                cleanObjectKey = cleanObjectKey.substring(0, cleanObjectKey.length() - 1);
+            }
+
+            // 6. 标准格式组装：endpoint/bucket/objectKey
+            String finalUrlStr = cleanEndpoint + "/" + cleanBucket + "/" + cleanObjectKey;
+
+            // 7. 完美兼容 JDK 8 的转换
+            return new URI(finalUrlStr).toURL();
+        } catch (Exception e) {
+            log.error("URL拼接错误");
+            return null;
+        }
+    }
+
+    /**
+     * 安全地拼接并构建可访问的 URL 对象
+     *
+     * @param objectKey   对象的 key，支持带或不带前缀斜杠
+     * @return 拼接好的 URL 对象，若参数不全或转换失败则返回 null
+     */
+    public URL buildObjectUrl(String objectKey) {
+        return this.buildObjectUrl(null, objectKey);
     }
 
     @Override

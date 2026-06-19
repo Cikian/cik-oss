@@ -20,7 +20,10 @@ import com.aliyuncs.sts.model.v20150401.AssumeRoleResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
@@ -135,14 +138,37 @@ public class AliyunOssServiceImpl implements IOssService {
     }
 
     @Override
-    public void putObject(String bucket, String objectKey, InputStream input) {
+    public URL putObject(String bucket, String objectKey, InputStream input) {
         ensureClientCreated();
+
+        // 1. 校验与上传
         if (ossClient.doesObjectExist(bucket, objectKey)) {
-            log.error("文件已存在！");
             throw new RuntimeException("文件已存在: " + objectKey);
         }
-        ossClient.putObject(new PutObjectRequest(bucket, objectKey, input, new ObjectMetadata()));
-        log.info("上传成功: {}", objectKey);
+
+        try {
+            ossClient.putObject(new PutObjectRequest(bucket, objectKey, input, new ObjectMetadata()));
+            log.info("上传成功: {}", objectKey);
+        } catch (Exception e) {
+            throw new RuntimeException("服务异常", e);
+        }
+
+        // 2. 直接调用配置类里封装好的方法，把多斜杠、单斜杠、降级逻辑全部甩锅出去
+        return configuration.buildObjectUrl(bucket, objectKey);
+    }
+
+    @Override
+    public URL putObject(String bucket, String objectKey, byte[] bytes) {
+        ensureClientCreated();
+        log.error("阿里云暂未实现接收byte[]，请使用InputStream");
+        return configuration.buildObjectUrl(bucket, null);
+    }
+
+    @Override
+    public URL putObject(String bucket, String objectKey, File file) {
+        ensureClientCreated();
+        log.error("阿里云暂未实现接收File，请使用InputStream");
+        return configuration.buildObjectUrl(bucket, null);
     }
 
     @Override

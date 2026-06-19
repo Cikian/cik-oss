@@ -13,10 +13,7 @@ import io.minio.messages.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -161,28 +158,52 @@ public class MinIOServiceImpl implements IOssService {
     }
 
     @Override
-    public void putObject(String bucket, String objectKey, InputStream input) {
+    public URL putObject(String bucket, String objectKey, InputStream input) {
         ensureClientCreated();
+
         try {
             client.statObject(StatObjectArgs.builder().bucket(bucket).object(objectKey).build());
             throw new RuntimeException("文件已存在: " + objectKey);
         } catch (ErrorResponseException e) {
-            try {
-                ObjectWriteResponse response = client.putObject(
-                        PutObjectArgs.builder()
-                                .bucket(bucket)
-                                .object(objectKey)
-                                .stream(input, -1, 10485760L) // -1 代表未知大小分片上传
-                                .build());
-                log.info("上传成功: {}", objectKey);
-            } catch (Exception ex) {
-                log.error("文件上传异常: {}", objectKey, ex);
-                throw new RuntimeException("上传失败");
-            }
+            // MinIO 的特征：文件不存在时会抛出 ErrorResponseException (通常是 NoSuchKey)
+            // 捕获到该异常说明文件不存在，允许继续往下执行上传逻辑
+            log.debug("文件不存在，允许上传: {}", objectKey);
+        } catch (RuntimeException e) {
+            log.error("业务处理异常: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
-            log.error("检查文件状态异常: {}", objectKey, e);
-            throw new RuntimeException("服务异常");
+            log.error("检查文件状态系统异常: {}", objectKey, e);
+            throw new RuntimeException("服务异常", e);
         }
+
+        try {
+            ObjectWriteResponse response = client.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucket)
+                            .object(objectKey)
+                            .stream(input, -1, 10485760L) // -1 代表未知大小分片上传
+                            .build());
+            log.info("上传成功: {}", objectKey);
+        } catch (Exception ex) {
+            log.error("文件上传发生异常: {}", objectKey, ex);
+            throw new RuntimeException("上传失败", ex);
+        }
+
+        return configuration.buildObjectUrl(bucket, objectKey);
+    }
+
+    @Override
+    public URL putObject(String bucket, String objectKey, byte[] bytes) {
+        ensureClientCreated();
+        log.error("Minio暂未实现接收byte[]，请使用InputStream");
+        return configuration.buildObjectUrl(bucket, objectKey);
+    }
+
+    @Override
+    public URL putObject(String bucket, String objectKey, File file) {
+        ensureClientCreated();
+        log.error("Minio暂未实现接收File，请使用InputStream");
+        return configuration.buildObjectUrl(bucket, objectKey);
     }
 
     @Override
