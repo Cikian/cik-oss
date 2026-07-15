@@ -5,7 +5,7 @@
 
     <groupId>cn.cikian</groupId>
     <artifactId>cik-oss</artifactId>
-    <version>0.2.5</version>
+    <version>0.2.6</version>
     <name>cik-oss</name>
     <description>OSS工具，支持厂商：阿里云, AWS MinIO, 又拍云</description>
 
