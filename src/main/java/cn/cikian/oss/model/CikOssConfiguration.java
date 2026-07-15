@@ -83,6 +83,15 @@ public class CikOssConfiguration {
     private String objectDirPrefix;
 
     /**
+     * 又拍云接入点：
+     * AUTO: (默认)根据网络条件自动选择接入点:v0.api.upyun.com
+     * TELECOM：电信接入点:v1.api.upyun.com
+     * CNC：联通网通接入点:v2.api.upyun.com
+     * CTT：移动铁通接入点:v3.api.upyun.com
+     */
+    private String apiDomain;
+
+    /**
      * 兼容性构造函数：无参
      */
     public CikOssConfiguration() {
@@ -143,7 +152,7 @@ public class CikOssConfiguration {
             }
 
             // 6. 标准格式组装：endpoint/bucket/objectKey
-            String finalUrlStr = cleanEndpoint + "/" + cleanBucket + "/" + cleanObjectKey;
+            String finalUrlStr = cleanEndpoint + "/" + (this.provider==OssTypeEnum.UPYUN ? "" : cleanBucket + "/") + cleanObjectKey;
 
             // 7. 完美兼容 JDK 8 的转换
             return new URI(finalUrlStr).toURL();

@@ -11,6 +11,7 @@ import io.minio.credentials.AssumeRoleProvider;
 import io.minio.credentials.Credentials;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -292,8 +293,29 @@ public class UpyunServiceImpl implements IOssService {
                 configuration.getAccessKey(),
                 configuration.getSecretKey()
         );
-        this.client.setApiDomain(RestManager.ED_AUTO);
-        log.info("Upyun 创建Client");
+
+        String apiDomain = configuration.getApiDomain();
+
+        if (StringUtils.isBlank(apiDomain)) {
+            apiDomain = "AUTO";
+        }
+
+        switch (apiDomain) {
+            case "TELECOM":
+                this.client.setApiDomain(RestManager.ED_TELECOM);
+                break;
+            case "CNC":
+                this.client.setApiDomain(RestManager.ED_CNC);
+                break;
+            case "CTT":
+                this.client.setApiDomain(RestManager.ED_CTT);
+                break;
+            case "AUTO":
+            default:
+                this.client.setApiDomain(RestManager.ED_AUTO);
+                break;
+        }
+        log.info("Upyun 创建Client成功，接入点：{}", apiDomain);
     }
 
     /**

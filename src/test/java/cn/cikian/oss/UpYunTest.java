@@ -45,6 +45,7 @@ public class UpYunTest {
         config.setSecretKey(dotenv.get("UPYUN_SECRET_KEY"));
         config.setObjectDirPrefix("test");
         config.setExpire(3600L);
+        config.setApiDomain("TELECOM");
         return config;
     }
 
@@ -58,9 +59,9 @@ public class UpYunTest {
     public void testUpload(){
         OssServiceContext context = getContext();
         assertNotNull(context.getOssService());
-        String localPath = "C:\\Users\\Stargis\\temp-kmz\\ckmz_1778836058958.kmz";
+        String localPath = "D:\\Users\\Stargis\\Pictures\\壁纸\\16-9\\echoes_of_color_v09_5120x2880.png";
         try (InputStream inputStream = Files.newInputStream(Paths.get(localPath))) {
-            context.putObject("test/ckmz_1778836058958.kmz", inputStream);
+            context.putObject("test/echoes_of_color_v09_5120x2880.png", inputStream);
         } catch (Exception e) {
             throw new RuntimeException("KMZ 文件上传 OSS 失败: " + e.getMessage(), e);
         }

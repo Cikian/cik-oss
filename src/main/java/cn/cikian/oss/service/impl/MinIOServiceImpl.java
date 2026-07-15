@@ -216,7 +216,7 @@ public class MinIOServiceImpl implements IOssService {
                 .credentials(configuration.getAccessKey(), configuration.getSecretKey())
                 .region(configuration.getRegion())
                 .build();
-        log.info("Minio 创建Client");
+        log.info("Minio 创建Client成功");
     }
 
     /**

@@ -180,7 +180,7 @@ public class AliyunOssServiceImpl implements IOssService {
                 .build(configuration.getEndpoint(),
                         configuration.getAccessKey(),
                         configuration.getSecretKey());
-        log.info("ALI 创建Client");
+        log.info("阿里云OSS 创建Client成功");
     }
 
     /**
@@ -188,7 +188,7 @@ public class AliyunOssServiceImpl implements IOssService {
      */
     private void ensureClientCreated() {
         if (this.ossClient == null) {
-            log.warn("ALI client为空，尝试创建Client");
+            log.warn("阿里云OSS client为空，尝试创建Client");
             createClient();
         }
     }
