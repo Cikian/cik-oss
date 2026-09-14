@@ -1,5 +1,6 @@
 package cn.cikian.oss.model;
 
+import cn.cikian.oss.enmus.ExistAction;
 import cn.cikian.oss.enmus.OssTypeEnum;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +20,18 @@ import java.net.URL;
  */
 @Slf4j
 @Data
-@ConfigurationProperties(prefix = "oss")
+@ConfigurationProperties(prefix = "ck.oss")
 public class CikOssConfiguration {
 
     /**
      * OSS 服务商类型
      */
     private OssTypeEnum provider;
+
+    /**
+     * 文件存在时执行动作
+     */
+    private ExistAction existAction;
 
     /**
      * 是否启用对象存储服务

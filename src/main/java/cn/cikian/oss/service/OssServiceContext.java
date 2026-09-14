@@ -4,6 +4,8 @@ import cn.cikian.oss.annotations.OssCheck;
 import cn.cikian.oss.enmus.OssTypeEnum;
 import cn.cikian.oss.model.CredentialsToken;
 import cn.cikian.oss.model.CikOssConfiguration;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.InputStream;

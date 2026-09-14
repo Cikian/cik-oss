@@ -1,5 +1,6 @@
 package cn.cikian.oss.service.impl;
 
+import cn.cikian.oss.enmus.ExistAction;
 import cn.cikian.oss.enmus.OssTypeEnum;
 import cn.cikian.oss.exception.CikException;
 import cn.cikian.oss.model.CikOssConfiguration;
@@ -187,9 +188,8 @@ public class UpyunServiceImpl implements IOssService {
 
         try {
             // 1. 校验文件是否存在
-            Response fileInfo = client.getFileInfo(objectKey);
-            if (fileInfo != null && fileInfo.code() == 200) {
-                throw new CikException("文件已存在: " + objectKey);
+            if (checkFileInfo(objectKey)) {
+                return getObjectUrl(bucket, objectKey);
             }
 
             // 2. 执行文件上传
@@ -221,9 +221,8 @@ public class UpyunServiceImpl implements IOssService {
 
         try {
             // 1. 校验文件是否存在
-            Response fileInfo = client.getFileInfo(objectKey);
-            if (fileInfo != null && fileInfo.code() == 200) {
-                throw new CikException("文件已存在: " + objectKey);
+            if (checkFileInfo(objectKey)) {
+                return getObjectUrl(bucket, objectKey);
             }
 
             // 2. 执行文件上传
@@ -255,10 +254,10 @@ public class UpyunServiceImpl implements IOssService {
 
         try {
             // 1. 校验文件是否存在
-            Response fileInfo = client.getFileInfo(objectKey);
-            if (fileInfo != null && fileInfo.code() == 200) {
-                throw new CikException("文件已存在: " + objectKey);
+            if (checkFileInfo(objectKey)) {
+                return getObjectUrl(bucket, objectKey);
             }
+
 
             // 2. 执行文件上传
             Response response = client.writeFile(objectKey, file, null);
@@ -326,5 +325,26 @@ public class UpyunServiceImpl implements IOssService {
             log.warn("Upyun client为空，尝试创建Client");
             createClient();
         }
+    }
+
+    private boolean checkFileInfo(String objectKey) {
+        if (configuration.getExistAction() == ExistAction.COVER || configuration.getExistAction() == null) {
+            return false;
+        }
+
+        Response fileInfo = null;
+        try {
+            fileInfo = client.getFileInfo(objectKey);
+            if (fileInfo != null && fileInfo.code() == 200) {
+
+                if (configuration.getExistAction() == ExistAction.EXIST) {
+                    return true;
+                }
+                throw new CikException("文件已存在: " + objectKey);
+            }
+        } catch (IOException | UpException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
     }
 }
