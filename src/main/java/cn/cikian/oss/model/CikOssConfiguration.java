@@ -181,7 +181,7 @@ public class CikOssConfiguration {
     @Override
     public String toString() {
         return "---配置信息---\n" +
-                "OSS服务商：" + this.provider.getType() + "\n" +
+                "OSS服务商：" + (this.provider == null ? "未配置" : this.provider.getType()) + "\n" +
                 "是否启用：" + isEnable() + "\n" +
                 "服务端点地址：" + this.endpoint + "\n" +
                 "访问账户：" + this.accessKey + "\n" +

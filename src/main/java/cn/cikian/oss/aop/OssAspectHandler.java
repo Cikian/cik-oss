@@ -34,12 +34,12 @@ public class OssAspectHandler {
         CikOssConfiguration configuration = ossServiceContext.getConfiguration();
 
         if (configuration == null || !configuration.isEnable()) {
-            throw new IllegalArgumentException("OSS 存储服务未启用，请检查配置项 'oss.enable'。");
+            throw new IllegalArgumentException("OSS 存储服务未启用，请检查配置项 'ck.oss.enable'。");
         }
 
         // 2. 检查具体的服务实现类是否已成功根据 provider 匹配并注入
         if (this.ossServiceContext.getOssService() == null) {
-            throw new IllegalArgumentException("未找到对应的 OSS 实现类，请检查 'oss.provider' 配置。");
+            throw new IllegalArgumentException("未找到对应的 OSS 实现类，请检查 'ck.oss.provider' 配置。");
         }
 
         // 3. 触发客户端初始化（如 Aliyun OSS 客户端或 MinioClient）

@@ -43,7 +43,8 @@ public class AmazonS3ServiceImpl implements IOssService {
     public AmazonS3ServiceImpl(CikOssConfiguration configuration) {
         log.info("AmazonS3 构造器注入配置");
         this.configuration = configuration;
-        ensureClientCreated();
+        // 客户端延迟到首次使用时创建（或由 OssAspectHandler 触发），
+        // 避免 accessKey 尚未配置时导致 Spring 容器启动失败
     }
 
     @Override

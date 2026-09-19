@@ -4,13 +4,10 @@ import cn.cikian.oss.annotations.OssCheck;
 import cn.cikian.oss.enmus.OssTypeEnum;
 import cn.cikian.oss.model.CredentialsToken;
 import cn.cikian.oss.model.CikOssConfiguration;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -43,8 +40,8 @@ public class OssServiceContext {
         this.ossService = ossServices.stream()
                 .filter(service -> service.getOssType() == configuration.getProvider())
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("未找到匹配的 OSS 提供商。可选范围: " +
-                        Arrays.toString(OssTypeEnum.values())));
+                .orElseThrow(() -> new IllegalArgumentException("未找到匹配的 OSS 提供商: " + configuration.getProvider() +
+                        "。请检查配置项 'ck.oss.provider'，可选值: " + OssTypeEnum.supportedValues()));
     }
 
     /**
