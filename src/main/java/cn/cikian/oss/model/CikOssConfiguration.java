@@ -2,6 +2,7 @@ package cn.cikian.oss.model;
 
 import cn.cikian.oss.enmus.ExistAction;
 import cn.cikian.oss.enmus.OssTypeEnum;
+import cn.cikian.oss.util.ObjectKeyUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -134,7 +135,6 @@ public class CikOssConfiguration {
         try {
             String cleanEndpoint = this.endpoint.trim();
             String cleanBucket = targetBucket.trim();
-            String cleanObjectKey = objectKey.trim();
 
             // 3. 循环清洗 endpoint 尾部的斜杠
             while (cleanEndpoint.endsWith("/")) {
@@ -149,13 +149,9 @@ public class CikOssConfiguration {
                 cleanBucket = cleanBucket.substring(0, cleanBucket.length() - 1);
             }
 
-            // 5. 循环清洗 objectKey 首尾的斜杠
-            while (cleanObjectKey.startsWith("/")) {
-                cleanObjectKey = cleanObjectKey.substring(1);
-            }
-            while (cleanObjectKey.endsWith("/")) {
-                cleanObjectKey = cleanObjectKey.substring(0, cleanObjectKey.length() - 1);
-            }
+            // 5. 归一化 objectKey：反斜杠、空格、重复斜杠、首尾斜杠
+            //    避免调用方拼接出 "dir//biz/path" 时，URL 与真实对象键不一致
+            String cleanObjectKey = ObjectKeyUtils.normalize(objectKey.trim());
 
             // 6. 标准格式组装：endpoint/bucket/objectKey
             String finalUrlStr = cleanEndpoint + "/" + (this.provider==OssTypeEnum.UPYUN ? "" : cleanBucket + "/") + cleanObjectKey;

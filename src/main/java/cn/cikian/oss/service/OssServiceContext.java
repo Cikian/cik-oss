@@ -4,6 +4,7 @@ import cn.cikian.oss.annotations.OssCheck;
 import cn.cikian.oss.enmus.OssTypeEnum;
 import cn.cikian.oss.model.CredentialsToken;
 import cn.cikian.oss.model.CikOssConfiguration;
+import cn.cikian.oss.util.ObjectKeyUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -65,7 +66,7 @@ public class OssServiceContext {
 
     @OssCheck
     public URL getObjectUrl(String bucket, String objectKey) {
-        objectKey = objectKey.replace("\\", "/").replace(" ", "_");
+        objectKey = ObjectKeyUtils.normalize(objectKey);
         if (!hasText(bucket) || !hasText(objectKey)) {
             throw new IllegalArgumentException("Bucket name or object key must not be empty.");
         }
@@ -94,7 +95,7 @@ public class OssServiceContext {
 
     @OssCheck
     public Boolean deleteObject(String bucket, String objectKey) {
-        objectKey = objectKey.replace("\\", "/").replace(" ", "_");
+        objectKey = ObjectKeyUtils.normalize(objectKey);
         checkServiceReady();
         return this.ossService.deleteObject(bucket, objectKey);
     }
@@ -106,7 +107,7 @@ public class OssServiceContext {
 
     @OssCheck
     public InputStream getObject(String bucket, String objectKey) {
-        objectKey = objectKey.replace("\\", "/").replace(" ", "_");
+        objectKey = ObjectKeyUtils.normalize(objectKey);
         checkServiceReady();
         return this.ossService.getObject(bucket, objectKey);
     }
@@ -118,21 +119,21 @@ public class OssServiceContext {
 
     @OssCheck
     public URL putObject(String bucket, String objectKey, InputStream stream) {
-        objectKey = objectKey.replace("\\", "/").replace(" ", "_");
+        objectKey = ObjectKeyUtils.normalize(objectKey);
         checkServiceReady();
         return this.ossService.putObject(bucket, objectKey, stream);
     }
 
     @OssCheck
     public URL putObject(String bucket, String objectKey, byte[] bytes) {
-        objectKey = objectKey.replace("\\", "/").replace(" ", "_");
+        objectKey = ObjectKeyUtils.normalize(objectKey);
         checkServiceReady();
         return this.ossService.putObject(bucket, objectKey, bytes);
     }
 
     @OssCheck
     public URL putObject(String bucket, String objectKey, File file) {
-        objectKey = objectKey.replace("\\", "/").replace(" ", "_");
+        objectKey = ObjectKeyUtils.normalize(objectKey);
         checkServiceReady();
         return this.ossService.putObject(bucket, objectKey, file);
     }
